@@ -15,7 +15,7 @@ jobs:
     name: Build PDF # user friendly name of the job
     runs-on: ubuntu-latest # runs on ubunto virtual maching 
     steps: # the steps
-      - uses: actions/checkout@v3 # gets the contents of the repository
+      - uses: actions/checkout@v4 # gets the contents of the repository
       - uses: baileyjm02/markdown-to-pdf@v1 # this is the code found in the github repository included in the instructions
         with:
           input_dir: docs # gets all the files in the folder docs
