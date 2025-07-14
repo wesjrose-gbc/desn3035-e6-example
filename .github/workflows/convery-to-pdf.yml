@@ -1,31 +1,61 @@
-# .github/workflows/convert-to-pdf.yml this is the recommended file name
-
 name: Docs to PDF
-# This workflow is triggered on pushes to the repository.
+
 on:
   push:
     branches:
       - main
-    # Paths can be used to only trigger actions when you have edited certain files, such as a file within the /docs directory
-    # this jobs will only run when there are updates to the .md files. or images folder in docs.
-   
 
 jobs:
-  converttopdf: # name of the job
-    name: Build PDF # user friendly name of the job
-    runs-on: ubuntu-latest # runs on ubunto virtual maching 
-    steps: # the steps
-      - uses: actions/checkout@v4 # gets the contents of the repository
-      - uses: baileyjm02/markdown-to-pdf@v1 # this is the code found in the github repository included in the instructions
+  converttopdf:
+    name: Build PDF
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: baileyjm02/markdown-to-pdf@v1
         with:
-          input_dir: docs # gets all the files in the folder docs
-          output_dir: pdfs # ouputs into the folder pdf
-          images_dir: docs/images # define images folder
-          # for example <img src="./images/file-name.png">
-          image_import: ./images # imort image , if there are any, there are not for us
-          # Default is true, can set to false to only get PDF files
+          input_dir: docs
+          output_dir: pdfs
+          images_dir: docs/images
+          image_import: ./images
           build_html: false
+
       - uses: actions/upload-artifact@v4
         with:
           name: docs
           path: pdfs
+
+  release:
+    name: Release PDF Artifact
+    needs: converttopdf
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate random tag
+        id: generate_tag
+        run: echo "tag=v$(date +'%Y%m%d%H%M%S')" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs
+          path: downloaded-docs
+
+      - name: List files
+        run: ls -R downloaded-docs
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.generate_tag.outputs.tag }}
+          name: "Release ${{ steps.generate_tag.outputs.tag }}"
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload PDF to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.generate_tag.outputs.tag }}
+          files: downloaded-docs/*.pdf
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
